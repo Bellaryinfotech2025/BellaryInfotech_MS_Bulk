@@ -1,5 +1,9 @@
 package com.bellaryinfotech.bulk.service;
  
+
+import com.bellaryinfotech.bulk.model.OrderFabricationImport;
+import com.bellaryinfotech.bulk.repo.OrderFabricationImportRepository;
+import com.bellaryinfotech.bulk.service.ExcelImportService;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
@@ -7,9 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import com.bellaryinfotech.bulk.model.OrderFabricationImport;
-import com.bellaryinfotech.bulk.repo.OrderFabricationImportRepository;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -51,22 +52,31 @@ public class ExcelImportServiceImpl implements ExcelImportService {
         // Alternative column names and variations
         COLUMN_MAPPINGS.put("BUILDING NAME", "buildingName");
         COLUMN_MAPPINGS.put("DRAWING NUMBER", "drawingNo");
+        COLUMN_MAPPINGS.put("DRAWING NO", "drawingNo");
         COLUMN_MAPPINGS.put("DRAWING DESC", "drawingDescription");
+        COLUMN_MAPPINGS.put("DESCRIPTION", "drawingDescription");
         COLUMN_MAPPINGS.put("ORDER NO", "orderNumber");
         COLUMN_MAPPINGS.put("ORIGINAL LINE NUMBER", "origLineNumber");
+        COLUMN_MAPPINGS.put("ORIG LINE NO", "origLineNumber");
         COLUMN_MAPPINGS.put("LINE NO", "lineNumber");
         COLUMN_MAPPINGS.put("ERECTION MARK", "erectionMkd");
+        COLUMN_MAPPINGS.put("ERECTION MKD.", "erectionMkd");
         COLUMN_MAPPINGS.put("ITEM NUMBER", "itemNo");
+        COLUMN_MAPPINGS.put("ITEM NO.", "itemNo");
         COLUMN_MAPPINGS.put("QTY", "quantity");
         COLUMN_MAPPINGS.put("PRICE", "unitPrice");
+        COLUMN_MAPPINGS.put("UNIT", "unitPrice");
         COLUMN_MAPPINGS.put("TOTAL QTY", "totalQuantity");
+        COLUMN_MAPPINGS.put("TOTAL WT.", "totalQuantity");
         COLUMN_MAPPINGS.put("ORIGINAL QTY", "originalQuantity");
+        COLUMN_MAPPINGS.put("QTY. REQD", "originalQuantity");
         COLUMN_MAPPINGS.put("REPEATED QUANTITY", "repeatedQty");
+        COLUMN_MAPPINGS.put("EREC. MKD. WT.", "repeatedQty");
         COLUMN_MAPPINGS.put("REMARKS", "remark");
     }
 
     @Override
-    public int importExcelToDatabase(MultipartFile file) throws Exception {
+    public List<OrderFabricationImport> importExcelToDatabase(MultipartFile file) throws Exception {
         List<OrderFabricationImport> importList = new ArrayList<>();
         
         try (InputStream is = file.getInputStream();
@@ -82,7 +92,7 @@ public class ExcelImportServiceImpl implements ExcelImportService {
             Row headerRow = sheet.getRow(0);
             if (headerRow == null) {
                 log.warn("Sheet has no header row, skipping");
-                return 0;
+                return importList;
             }
             
             Map<Integer, String> columnIndexToFieldMap = mapHeadersToFields(headerRow);
@@ -118,13 +128,13 @@ public class ExcelImportServiceImpl implements ExcelImportService {
             // Save all records to database
             if (!importList.isEmpty()) {
                 log.info("Saving {} records to database", importList.size());
-                repository.saveAll(importList);
+                importList = repository.saveAll(importList);
                 log.info("Successfully saved {} records", importList.size());
             } else {
                 log.warn("No valid records found to import");
             }
             
-            return importList.size();
+            return importList;
         } catch (Exception e) {
             log.error("Error importing Excel file: {}", e.getMessage(), e);
             throw e;
@@ -239,12 +249,28 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                     if (longValue != null) {
                         entity.setOrigLineNumber(longValue);
                         return true;
+                    } else if (stringValue != null) {
+                        try {
+                            entity.setOrigLineNumber(Long.parseLong(stringValue));
+                            return true;
+                        } catch (NumberFormatException e) {
+                            entity.setOrigLineNumber(null);
+                            return false;
+                        }
                     }
                     break;
                 case "lineNumber":
                     if (longValue != null) {
                         entity.setLineNumber(longValue);
                         return true;
+                    } else if (stringValue != null) {
+                        try {
+                            entity.setLineNumber(Long.parseLong(stringValue));
+                            return true;
+                        } catch (NumberFormatException e) {
+                            entity.setLineNumber(null);
+                            return false;
+                        }
                     }
                     break;
                 case "erectionMkd":

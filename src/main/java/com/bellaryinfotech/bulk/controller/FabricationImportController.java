@@ -1,5 +1,4 @@
 package com.bellaryinfotech.bulk.controller;
-
  
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +23,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/fabrication")
+@CrossOrigin(origins = "*") // Add this to allow cross-origin requests
 public class FabricationImportController {
 
     private static final Logger log = LoggerFactory.getLogger(FabricationImportController.class);
@@ -58,7 +58,8 @@ public class FabricationImportController {
             log.info("Processing file: {}, size: {} bytes", file.getOriginalFilename(), file.getSize());
         
             // Process the file
-            int recordsImported = excelImportService.importExcelToDatabase(file);
+            List<OrderFabricationImport> importedRecords = excelImportService.importExcelToDatabase(file);
+            int recordsImported = importedRecords.size();
 
             log.info("Import completed. Records imported: {}", recordsImported);
         
@@ -66,6 +67,7 @@ public class FabricationImportController {
             response.put("status", "success");
             response.put("message", "File imported successfully");
             response.put("recordsImported", recordsImported);
+            response.put("data", importedRecords); // Return the imported records
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -86,10 +88,18 @@ public class FabricationImportController {
             @RequestParam(defaultValue = "ifaceId") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
         try {
+            log.info("Fetching imported data: page={}, size={}, sortBy={}, sortDir={}", page, size, sortBy, sortDir);
+            
             Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
             
             Page<OrderFabricationImport> dataPage = repository.findAll(pageable);
+            
+            // Log the data being returned
+            log.info("Found {} records, total {} records", dataPage.getContent().size(), dataPage.getTotalElements());
+            for (OrderFabricationImport record : dataPage.getContent()) {
+                log.debug("Record: {}", record);
+            }
             
             Map<String, Object> response = new HashMap<>();
             response.put("data", dataPage.getContent());
@@ -150,6 +160,31 @@ public class FabricationImportController {
                     ));
         }
     }
+    
+    // Add a new endpoint to get the most recently imported data
+    @GetMapping("/latest-imported")
+    public ResponseEntity<?> getLatestImportedData() {
+        try {
+            log.info("Fetching latest imported data");
+            
+            // Get the most recent records (limit to 100 for performance)
+            List<OrderFabricationImport> latestRecords = repository.findTop100ByOrderByIfaceIdDesc();
+            
+            log.info("Found {} latest records", latestRecords.size());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", latestRecords);
+            response.put("totalItems", latestRecords.size());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Failed to retrieve latest data", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                        "status", "error",
+                        "message", "Failed to retrieve latest data: " + e.getMessage()
+                    ));
+        }
+    }
 }
-
 
