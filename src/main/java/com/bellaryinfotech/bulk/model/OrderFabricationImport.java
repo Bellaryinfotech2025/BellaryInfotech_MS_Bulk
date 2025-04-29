@@ -112,8 +112,11 @@ public class OrderFabricationImport {
     @Column(name = "org_id")
     private Long orgId;
     
-    // If Lombok is not working properly, we need to manually implement these methods
-    // that are being called in the ExcelImportServiceImpl
+    
+    @Column(name = "batch_name")
+    private String batchName;
+    
+    
     
     public void setIfaceStatus(String ifaceStatus) {
         this.ifaceStatus = ifaceStatus;
@@ -133,10 +136,31 @@ public class OrderFabricationImport {
     
     public void setBuildingName(String buildingName) {
         this.buildingName = buildingName;
+        
+        this.updateBatchName();
     }
     
     public void setDrawingNo(String drawingNo) {
         this.drawingNo = drawingNo;
+        
+        this.updateBatchName();
+    }
+    
+    // Helper method here to update batch_name
+    private void updateBatchName() {
+        if (this.buildingName != null || this.drawingNo != null) {
+            String building = this.buildingName != null ? this.buildingName : "";
+            String drawing = this.drawingNo != null ? this.drawingNo : "";
+            this.batchName = building + ((!building.isEmpty() && !drawing.isEmpty()) ? " " : "") + drawing;
+        }
+    }
+    
+    public void setBatchName(String batchName) {
+        this.batchName = batchName;
+    }
+    
+    public String getBatchName() {
+        return this.batchName;
     }
     
     public void setDrawingDescription(String drawingDescription) {
@@ -207,23 +231,23 @@ public class OrderFabricationImport {
         this.remark = remark;
     }
     
-    // Additional methods that might be called from the old implementation
+   
     public void setOrigLineNo(String origLineNo) {
-        // Convert string to Long if possible
+        
         try {
             this.origLineNumber = Long.parseLong(origLineNo);
         } catch (NumberFormatException e) {
-            // If it can't be parsed as a number, store it as null
+            
             this.origLineNumber = null;
         }
     }
     
     public void setLineNo(String lineNo) {
-        // Convert string to Long if possible
+       
         try {
             this.lineNumber = Long.parseLong(lineNo);
         } catch (NumberFormatException e) {
-            // If it can't be parsed as a number, store it as null
+           
             this.lineNumber = null;
         }
     }
@@ -249,12 +273,22 @@ public class OrderFabricationImport {
     }
     
     public void setErecMkdWt(BigDecimal erecMkdWt) {
-        // No direct mapping, but we can store it in repeatedQty as a fallback
+        
         this.repeatedQty = erecMkdWt;
     }
     
     public void setRemarks(String remarks) {
         this.remark = remarks;
     }
+
+	public String getBuildingName() {
+		 
+		return null;
+	}
+
+	public String getDrawingNo() {
+		 
+		return null;
+	}
 }
 

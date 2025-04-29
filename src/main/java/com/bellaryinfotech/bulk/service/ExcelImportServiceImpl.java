@@ -120,6 +120,8 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                 boolean hasData = processRowData(row, columnIndexToFieldMap, entity);
                 
                 if (hasData) {
+                    // Set batch_name as a combination of building_name and drawing_no
+                    setBatchName(entity);
                     log.debug("Adding entity to import list: {}", entity);
                     importList.add(entity);
                 }
@@ -138,6 +140,20 @@ public class ExcelImportServiceImpl implements ExcelImportService {
         } catch (Exception e) {
             log.error("Error importing Excel file: {}", e.getMessage(), e);
             throw e;
+        }
+    }
+    
+    // Helper method to set batch_name
+    private void setBatchName(OrderFabricationImport entity) {
+        String buildingName = entity.getBuildingName();
+        String drawingNo = entity.getDrawingNo();
+        
+        if (buildingName != null || drawingNo != null) {
+            String building = buildingName != null ? buildingName : "";
+            String drawing = drawingNo != null ? drawingNo : "";
+            String batchName = building + ((!building.isEmpty() && !drawing.isEmpty()) ? " " : "") + drawing;
+            entity.setBatchName(batchName);
+            log.debug("Set batch_name to: {}", batchName);
         }
     }
     

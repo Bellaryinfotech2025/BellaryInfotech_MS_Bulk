@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/fabrication")
-@CrossOrigin(origins = "*") // Add this to allow cross-origin requests
+@RequestMapping("/api/V2.0")
+@CrossOrigin(origins = "*")  
 public class FabricationImportController {
 
     private static final Logger log = LoggerFactory.getLogger(FabricationImportController.class);
@@ -34,7 +34,7 @@ public class FabricationImportController {
     @Autowired
     private OrderFabricationImportRepository repository;
 
-    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/imports", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> importExcelFile(@RequestParam("file") MultipartFile file) {
         try {
             // Check if file is empty
@@ -161,7 +161,7 @@ public class FabricationImportController {
         }
     }
     
-    // Add a new endpoint to get the most recently imported data
+    
     @GetMapping("/latest-imported")
     public ResponseEntity<?> getLatestImportedData() {
         try {
